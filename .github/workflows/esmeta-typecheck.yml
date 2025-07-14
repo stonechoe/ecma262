@@ -1,10 +1,10 @@
-name: 'esmeta typecheck'
+name: 'esmeta'
 
 on: [pull_request]
 
 jobs:
   esmeta-typecheck:
-    name: 'esmeta typecheck'
+    name: 'typecheck'
     runs-on: ubuntu-22.04
 
     env:
@@ -38,4 +38,47 @@ jobs:
             && ln -s "$(pwd)" "${ESMETA_HOME}"/ecma262
       - name: typecheck
         run: '"${ESMETA_HOME}"/bin/esmeta tycheck -status -tycheck:log -tycheck:ignore=esmeta-ignore.json'
+
+
+  esmeta-yet-steps:
+    name: 'yet steps check'
+    runs-on: ubuntu-22.04
+
+    env:
+      ESMETA_HOME: vendor/esmeta
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # we need to do some git-works
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
+      - name: download esmeta
+        run: |
+          mkdir -p "${ESMETA_HOME}"
+          cd "${ESMETA_HOME}"
+          git init
+          git remote add origin https://github.com/stonechoe/esmeta.git # using my repo for temp
+          git fetch --depth 1 origin 380ea10aef3db1e9130c58abe8a7daa6e5ed1b32 ;
+          git checkout FETCH_HEAD
+      - name: build esmeta
+        run: |
+          cd "${ESMETA_HOME}"
+          sbt assembly
+      - name: link
+        run: |
+          rmdir "${ESMETA_HOME}"/ecma262 \
+            && ln -s "$(pwd)" "${ESMETA_HOME}"/ecma262
+      - name: gen filter
+        run: '"${ESMETA_HOME}"/bin/esmeta extract -status -extract:log -extract:target=${{ github.event.pull_request.base.sha }}'
+      - name: copy log file
+        run: 'cp "${ESMETA_HOME}"/logs/extract/yet-steps "${ESMETA_HOME}"/yet-steps-manual.json'
+      - name: typecheck
+        run: '"${ESMETA_HOME}"/bin/esmeta extract -status -extract:warn-action -extract:target=${{ github.event.pull_request.head.sha }} -extract:ignore-yets="${ESMETA_HOME}/yet-steps-manual.json"'
 
