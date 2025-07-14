@@ -65,7 +65,7 @@ jobs:
           cd "${ESMETA_HOME}"
           git init
           git remote add origin https://github.com/stonechoe/esmeta.git # using my repo for temp
-          git fetch --depth 1 origin 380ea10aef3db1e9130c58abe8a7daa6e5ed1b32 ;
+          git fetch --depth 1 origin add8d5e3e976b643fd35716749c8507103af3990 ;
           git checkout FETCH_HEAD
       - name: build esmeta
         run: |
